@@ -64,6 +64,7 @@ get-face-values: func [
 		node [node!]
 		s	 [series!]
 ][
+	assert (GetWindowLong hWnd wc-offset) and get-type-mask = TYPE_OBJECT
 	node: as node! GetWindowLong hWnd wc-offset + 4
 	ctx: TO_CTX(node)
 	s: as series! ctx/values/value

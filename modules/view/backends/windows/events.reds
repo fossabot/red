@@ -791,12 +791,11 @@ WndProc: func [
 		winpos [tagWINDOWPOS]
 		w-type [red-word!]
 ][
-	either msg <> WM_NCCREATE [
+	either (GetWindowLong hWnd wc-offset) and get-type-mask = TYPE_OBJECT [
 		w-type: (as red-word! get-face-values hWnd) + FACE_OBJ_TYPE
 		type: symbol/resolve w-type/symbol
-	][
-		type: window
-	]
+	][type: -1]
+
 	switch msg [
 		WM_NCCREATE [
 			p-int: as int-ptr! lParam
