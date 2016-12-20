@@ -10,6 +10,15 @@ Red/System [
 	}
 ]
 
+#define COM_SAFE_RELEASE_OBJ(interface obj) [
+	this: as this! obj
+	if this <> null [
+		interface: as IUnknown this/vtbl
+		interface/Release this
+		obj: 0
+	]
+]
+
 #define COM_SAFE_RELEASE(interface this) [
 	if this <> null [
 		interface: as IUnknown this/vtbl
@@ -253,9 +262,13 @@ IPropertyBag: alias struct! [
 
 #import [
 	"ole32.dll" stdcall [
-		CoInitializeEx: "CoInitializeEx" [
+		;CoInitializeEx: "CoInitializeEx" [
+		;	reserved	[integer!]
+		;	dwCoInit	[integer!]
+		;	return:		[integer!]
+		;]
+		CoInitialize: "CoInitialize" [
 			reserved	[integer!]
-			dwCoInit	[integer!]
 			return:		[integer!]
 		]
 		CoUninitialize: "CoUninitialize" []

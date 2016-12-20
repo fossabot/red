@@ -191,6 +191,7 @@ system/view/VID: context [
 				   opt [rate! 'now (opts/now?: yes spec: next spec)]
 				| 'default 	  (opts/data: add-option opts append copy [default: ] fetch-value spec: next spec)
 				| 'no-border  (set-flag opts 'flags 'no-border)
+				| 'Direct2D   (set-flag opts 'flags 'Direct2D)
 				| 'space	  (opt?: no)				;-- avoid wrongly reducing that word
 				] to end
 			]

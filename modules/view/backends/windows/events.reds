@@ -937,15 +937,15 @@ WndProc: func [
 				return 0
 			]
 		]
-		WM_ERASEBKGND [
-			draw: (as red-block! get-face-values hWnd) + FACE_OBJ_DRAW
-			if any [
-				TYPE_OF(draw) = TYPE_BLOCK				;-- draw background in draw to avoid flickering
-				render-base hWnd as handle! wParam
-			][
-				return 1
-			]
-		]
+		;WM_ERASEBKGND [
+		;	draw: (as red-block! get-face-values hWnd) + FACE_OBJ_DRAW
+		;	if any [
+		;		TYPE_OF(draw) = TYPE_BLOCK				;-- draw background in draw to avoid flickering
+		;		render-base hWnd as handle! wParam
+		;	][
+		;		return 1
+		;	]
+		;]
 		WM_PAINT [
 			draw: (as red-block! get-face-values hWnd) + FACE_OBJ_DRAW
 			if TYPE_OF(draw) = TYPE_BLOCK [
@@ -1155,12 +1155,12 @@ do-events: func [
 		]
 	][
 		unless msg? [msg?: yes]
-		state: process msg
-		if state >= EVT_DISPATCH [
+		;state: process msg
+		;if state >= EVT_DISPATCH [
 			current-msg: msg
 			TranslateMessage msg
 			DispatchMessage msg
-		]
+		;]
 		if no-wait? [return msg?]
 	]
 	exit-loop: exit-loop - 1

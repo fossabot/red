@@ -42,6 +42,7 @@ matrix-order: GDIPLUS_MATRIXORDERAPPEND
 
 anti-alias?: no
 GDI+?: no
+D2D?: no
 
 update-gdiplus-font-color: func [ctx [draw-ctx!] color [integer!] /local brush [integer!]][
 	if ctx/font-color <> color [
@@ -105,13 +106,11 @@ update-gdiplus-pen: func [ctx [draw-ctx!] /local handle [integer!]][
 ]
 
 update-brush: func [ctx [draw-ctx!] /local handle [handle!]][
-	unless null? ctx/brush [DeleteObject ctx/brush]
-	ctx/brush: either ctx/brush? [
+	if 0 <> ctx/brush [DeleteObject as handle! ctx/brush]
+	ctx/brush: as-integer either ctx/brush? [
 		handle: CreateSolidBrush ctx/brush-color
-		handle
 	][
 		handle: GetStockObject NULL_BRUSH
-		null
 	]
 	SelectObject ctx/dc handle
 ]
@@ -126,11 +125,11 @@ update-pen: func [
 		brush [tagLOGBRUSH]
 ][
 	mode: 0
-	unless null? ctx/pen [DeleteObject ctx/pen]
+	if 0 <> ctx/pen [DeleteObject as handle! ctx/pen]
 	either ctx/pen? [
 		cap: ctx/pen-cap
 		join: ctx/pen-join
-		ctx/pen: either all [join = -1 cap = -1] [
+		ctx/pen: as-integer either all [join = -1 cap = -1] [
 			pen: CreatePen ctx/pen-style as integer! ctx/pen-width ctx/pen-color
 			pen
 		][
@@ -164,7 +163,7 @@ update-pen: func [
 		]
 	][
 		pen: GetStockObject NULL_PEN
-		ctx/pen: null
+		ctx/pen: 0
 	]
 	SelectObject ctx/dc pen
 ]
@@ -178,6 +177,78 @@ update-modes: func [
 		update-pen ctx
 		update-brush ctx
 	]
+]
+
+init-draw-d2d: func [
+	ctx			[draw-ctx!]
+	hWnd		[handle!]
+	/local
+		this	[this!]
+		rt		[ID2D1HwndRenderTarget]
+		_11		[integer!]
+		_12		[integer!]
+		_21		[integer!]
+		_22		[integer!]
+		_31		[integer!]
+		_32		[integer!]
+		color	[D3DCOLORVALUE]
+		m		[D2D_MATRIX_3X2_F]
+		bg-clr	[integer!]
+		brush	[integer!]
+][
+	this: as this! GetWindowLong hWnd wc-offset - 24
+	if null? this [
+		this: create-hwnd-render-target hWnd
+		SetWindowLong hWnd wc-offset - 24 as-integer this
+	]
+	ctx/dc: as handle! this
+
+probe "init-draw-d2d"
+	rt: as ID2D1HwndRenderTarget this/vtbl
+	rt/BeginDraw this
+	_11: 0 _12: 0 _21: 0 _22: 0 _31: 0 _32: 0
+	;m: as D2D_MATRIX_3X2_F :_32
+	;m/_11: as float32! 1.0
+	;m/_22: as float32! 1.0
+	;;rt/SetTransform this m				;-- set to identity matrix
+	;bg-clr: to-bgr as node! GetWindowLong hWnd wc-offset + 4 FACE_OBJ_COLOR
+	;if bg-clr <> -1 [						;-- paint background
+	color: as D3DCOLORVALUE :_32
+	color/r: as float32! 1.0
+	color/g: as float32! 0.0
+	color/b: as float32! 0.0
+	color/a: as float32! 1.0
+	rt/Clear this color
+		;rt/Clear this to-dx-color bg-clr null
+	;]
+
+
+	;brush: 0
+	;rt/CreateSolidColorBrush this to-dx-color ctx/pen-color null null :brush
+	;ctx/pen: brush
+]
+
+clean-draw-d2d: func [
+	ctx		[draw-ctx!]
+	/local
+		IUnk [IUnknown]
+		this [this!]
+][
+	COM_SAFE_RELEASE_OBJ(IUnk ctx/pen)
+]
+
+draw-end-d2d: func [
+	ctx		[draw-ctx!]
+	/local
+		this [this!]
+		rt	 [ID2D1HwndRenderTarget]
+		hr [integer!]
+][
+	this: as this! ctx/dc
+	rt: as ID2D1HwndRenderTarget this/vtbl
+	hr: rt/EndDraw this null null
+	;probe ["end: " hr]
+	;clean-draw-d2d ctx
 ]
 
 draw-begin: func [
@@ -195,10 +266,11 @@ draw-begin: func [
 		hBitmap  [handle!]
 		hBackDC  [handle!]
 		graphics [integer!]
+		render	 [this!]
 ][
-	ctx/pen:			null
-	ctx/brush:			null
-	ctx/pen-width:		as float32! 1
+	ctx/pen:			0
+	ctx/brush:			0
+	ctx/pen-width:		as float32! 1.0
 	ctx/pen-style:		PS_SOLID
 	ctx/pen-color:		0						;-- default: black
 	ctx/pen-join:		-1
@@ -220,11 +292,11 @@ draw-begin: func [
 	ctx/font-color?:	no
 	dc:					null
 
+	D2D?: (get-face-flags hWnd) and FACET_FLAGS_D2D <> 0
     last-point?: no
     prev-shape/type: SHAPE_OTHER
     path-last-point/x: 0
     path-last-point/y: 0
-
 	rect: declare RECT_STRUCT
 	either null? hWnd [
 		ctx/on-image?: yes
@@ -240,27 +312,33 @@ draw-begin: func [
 		ctx/dc: dc
 		update-gdiplus-font-color ctx ctx/pen-color
 	][
-		dc: either paint? [BeginPaint hWnd paint][hScreen]
-		GetClientRect hWnd rect
-		width: rect/right - rect/left
-		height: rect/bottom - rect/top
-		hBitmap: CreateCompatibleBitmap dc width height
-		hBackDC: CreateCompatibleDC dc
-		SelectObject hBackDC hBitmap
-		ctx/bitmap: hBitmap
+		either D2D? [
+			BeginPaint hWnd paint
+			init-draw-d2d ctx hWnd
+			return ctx
+		][
+			dc: either paint? [BeginPaint hWnd paint][hScreen]
+			GetClientRect hWnd rect
+			width: rect/right - rect/left
+			height: rect/bottom - rect/top
+			hBitmap: CreateCompatibleBitmap dc width height
+			hBackDC: CreateCompatibleDC dc
+			SelectObject hBackDC hBitmap
+			ctx/bitmap: hBitmap
 
-		dc: hBackDC
-		ctx/dc: dc
+			dc: hBackDC
+			ctx/dc: dc
 
-		SetGraphicsMode dc GM_ADVANCED
-		SetArcDirection dc AD_CLOCKWISE
-		SetBkMode dc BK_TRANSPARENT
-		SelectObject dc GetStockObject NULL_BRUSH
+			SetGraphicsMode dc GM_ADVANCED
+			SetArcDirection dc AD_CLOCKWISE
+			SetBkMode dc BK_TRANSPARENT
+			SelectObject dc GetStockObject NULL_BRUSH
 
-		render-base hWnd dc
+			render-base hWnd dc
 
-		graphics: 0
-		GdipCreateFromHDC dc :graphics	
+			graphics: 0
+			GdipCreateFromHDC dc :graphics
+		]
 	]
 
 	ctx/graphics: graphics
@@ -282,6 +360,10 @@ draw-end: func [
 	cache?		[logic!]
 	paint?		[logic!]
 	/local
+		pad1	[integer!]
+		pad2	[integer!]
+		pad3	[integer!]
+		pad4	[integer!]
 		rect	[RECT_STRUCT]
 		width	[integer!]
 		height	[integer!]
@@ -289,8 +371,18 @@ draw-end: func [
 		old-dc	[integer!]
 		dc		[handle!]
 ][
+	?? D2D?
+	if D2D? [
+		draw-end-d2d ctx
+		probe "ValidateRect"
+		;ValidateRect hWnd null
+		EndPaint hWnd paint
+		exit
+	]
+
 	dc: ctx/dc
-	rect: declare RECT_STRUCT
+	pad4: 0
+	rect: as RECT_STRUCT :pad4
 	if paint? [
 		GetClientRect hWnd rect
 		width: rect/right - rect/left
@@ -299,15 +391,15 @@ draw-end: func [
 	]
 
 	unless any [on-graphic? zero? ctx/graphics][GdipDeleteGraphics ctx/graphics]
-	unless zero? ctx/gp-pen	[GdipDeletePen ctx/gp-pen]
+	unless zero? ctx/gp-pen			[GdipDeletePen ctx/gp-pen]
 	unless zero? ctx/gp-pen-saved	[GdipDeletePen ctx/gp-pen-saved]
-	unless zero? ctx/gp-brush	[GdipDeleteBrush ctx/gp-brush]
-	unless zero? ctx/gp-font-brush [GdipDeleteBrush ctx/gp-font-brush]
-	unless zero? ctx/gp-font	[GdipDeleteFont ctx/gp-font]
-	unless zero? ctx/image-attr [GdipDisposeImageAttributes ctx/image-attr]
-	unless zero? ctx/gp-matrix [GdipDeleteMatrix ctx/gp-matrix]
-	unless null? ctx/pen		[DeleteObject ctx/pen]
-	unless null? ctx/brush	[DeleteObject ctx/brush]
+	unless zero? ctx/gp-brush		[GdipDeleteBrush ctx/gp-brush]
+	unless zero? ctx/gp-font-brush	[GdipDeleteBrush ctx/gp-font-brush]
+	unless zero? ctx/gp-font		[GdipDeleteFont ctx/gp-font]
+	unless zero? ctx/image-attr 	[GdipDisposeImageAttributes ctx/image-attr]
+	unless zero? ctx/gp-matrix		[GdipDeleteMatrix ctx/gp-matrix]
+	unless zero? ctx/pen			[DeleteObject as handle! ctx/pen]
+	unless zero? ctx/brush			[DeleteObject as handle! ctx/brush]
 
 	unless ctx/on-image? [
 		DeleteObject ctx/bitmap
@@ -1314,6 +1406,31 @@ do-draw-ellipse: func [
 	]
 ]
 
+OS-draw-circle-d2d: func [
+	ctx	   [draw-ctx!]
+	center [red-pair!]
+	radius [red-integer!]
+	/local
+		this	[this!]
+		rt		[ID2D1HwndRenderTarget]
+		ellipse [D2D1_ELLIPSE]
+][
+	this: as this! ctx/dc
+	rt: as ID2D1HwndRenderTarget this/vtbl
+
+	ellipse: declare D2D1_ELLIPSE
+	ellipse/x: as float32! center/x
+	ellipse/y: as float32! center/y
+	ellipse/radiusX: get-float32 radius
+	ellipse/radiusY: ellipse/radiusX
+	if ctx/brush? [
+		rt/FillEllipse this ellipse ctx/brush
+	]
+	if ctx/pen? [
+		rt/DrawEllipse this ellipse ctx/pen ctx/pen-width ctx/pen-style
+	]
+]
+
 OS-draw-circle: func [
 	ctx		[draw-ctx!]
 	center	[red-pair!]
@@ -1325,6 +1442,10 @@ OS-draw-circle: func [
 		h	  [integer!]
 		f	  [red-float!]
 ][
+	if D2D? [
+		;OS-draw-circle-d2d ctx center radius
+		exit
+	]
 	either TYPE_OF(radius) = TYPE_INTEGER [
 		either center + 1 = radius [					;-- center, radius
 			rad-x: radius/value

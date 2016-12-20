@@ -13,7 +13,7 @@ Red/System [
 ;; ===== Extra slots usage in Window structs =====
 ;;
 ;;		-60 :							<- TOP
-;;		-56 : direct-2d? flags			;@@ temporary
+;;		-24 : Direct2D target interface (base face only)
 ;;		-20 : evolved-base-layered: child handle
 ;;		-16 : base-layered: owner handle
 ;;		-12 : base-layered: clipped? flags
@@ -414,10 +414,13 @@ enable-visual-styles: func [
 		ctrls [tagINITCOMMONCONTROLSEX]
 ][
 	size: size? tagINITCOMMONCONTROLSEX
-	icc: ICC_STANDARD_CLASSES
-	  or ICC_TAB_CLASSES
-	  or ICC_LISTVIEW_CLASSES
-	  or ICC_BAR_CLASSES
+	icc: ICC_STANDARD_CLASSES			;-- user32.dll controls
+	  or ICC_PROGRESS_CLASS				;-- progress
+	  or ICC_TAB_CLASSES				;-- tabs
+	  or ICC_LISTVIEW_CLASSES			;-- table headers
+	  or ICC_UPDOWN_CLASS				;-- spinboxes
+	  or ICC_BAR_CLASSES				;-- trackbar
+	  or ICC_DATE_CLASSES				;-- date/time picker
 	ctrls: as tagINITCOMMONCONTROLSEX :size
 	InitCommonControlsEx ctrls
 ]
@@ -457,6 +460,16 @@ init: func [
 		or (version-info/dwMinorVersion << 8)
 		and 0000FFFFh
 
+	log-pixels-x: GetDeviceCaps hScreen 88				;-- LOGPIXELSX
+	log-pixels-y: GetDeviceCaps hScreen 90				;-- LOGPIXELSY
+
+	probe "init COM"
+	probe CoInitialize 0
+
+	set-defaults
+
+	unless winxp? [DX-init]
+
 	register-classes hInstance
 
 	int: as red-integer! #get system/view/platform/build
@@ -466,12 +479,6 @@ init: func [
 	int: as red-integer! #get system/view/platform/product
 	int/header: TYPE_INTEGER
 	int/value:  as-integer version-info/wProductType
-	
-	log-pixels-x: GetDeviceCaps hScreen 88				;-- LOGPIXELSX
-	log-pixels-y: GetDeviceCaps hScreen 90				;-- LOGPIXELSY
-
-	unless winxp? [DX-init]
-	set-defaults
 ]
 
 find-last-window: func [
@@ -635,6 +642,10 @@ get-flags: func [
 			sym = no-buttons [flags: flags or FACET_FLAGS_NO_BTNS]
 			sym = modal		 [flags: flags or FACET_FLAGS_MODAL]
 			sym = popup		 [flags: flags or FACET_FLAGS_POPUP]
+			all [
+				sym = Direct2D
+				d2d-factory <> null
+			]				 [flags: flags or FACET_FLAGS_D2D]
 			true			 [fire [TO_ERROR(script invalid-arg) word]]
 		]
 		word: word + 1
@@ -909,7 +920,7 @@ OS-make-view: func [
 	
 	bits: 	  get-flags as red-block! values + FACE_OBJ_FLAGS
 
-	flags: 	  WS_CHILD or WS_CLIPSIBLINGS
+	flags: 	  WS_CHILD ;or WS_CLIPSIBLINGS
 	ws-flags: 0
 	id:		  0
 	sym: 	  symbol/resolve type/symbol
@@ -993,7 +1004,6 @@ OS-make-view: func [
 			alpha?: transparent-base?
 				as red-tuple! values + FACE_OBJ_COLOR
 				as red-image! values + FACE_OBJ_IMAGE
-			
 			if alpha? [
 				either win8+? [ws-flags: WS_EX_LAYERED][
 					ws-flags: WS_EX_LAYERED or WS_EX_TOOLWINDOW
@@ -1006,7 +1016,7 @@ OS-make-view: func [
 		]
 		sym = window [
 			class: #u16 "RedWindow"
-			flags: WS_BORDER or WS_CLIPCHILDREN
+			flags: WS_BORDER ;or WS_CLIPCHILDREN
 			if bits and FACET_FLAGS_NO_MIN  = 0 [flags: flags or WS_MINIMIZEBOX]
 			if bits and FACET_FLAGS_NO_MAX  = 0 [flags: flags or WS_MAXIMIZEBOX]
 			if bits and FACET_FLAGS_NO_BTNS = 0 [flags: flags or WS_SYSMENU]
@@ -1086,6 +1096,7 @@ OS-make-view: func [
 			SetWindowLong handle wc-offset - 4 0
 			SetWindowLong handle wc-offset - 16 parent
 			SetWindowLong handle wc-offset - 20 0
+			SetWindowLong handle wc-offset - 24 0
 			either alpha? [
 				pt: as tagPOINT (as int-ptr! offset) + 2
 				unless win8+? [
@@ -1099,6 +1110,7 @@ OS-make-view: func [
 					process-layered-region handle size offset null offset null yes
 				]
 			][
+				;if bits and FACET_FLAGS_D2D <> 0 [clear-background-d2d handle]
 				SetWindowLong handle wc-offset - 12 offset/y << 16 or (offset/x and FFFFh)
 			]
 		]

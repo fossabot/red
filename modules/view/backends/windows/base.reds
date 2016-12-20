@@ -391,30 +391,42 @@ BaseWndProc: func [
 	return: [integer!]
 	/local
 		flags	[integer!]
+		w		[integer!]
 		draw	[red-block!]
 ][
 	switch msg [
-		WM_MOUSEACTIVATE [
-			flags: GetWindowLong hWnd GWL_EXSTYLE
-			if flags and WS_EX_LAYERED > 0 [
-				return 3							;-- do not make it activated when click it
-			]
-		]
-		WM_LBUTTONDOWN	 [SetCapture hWnd return 0]
-		WM_LBUTTONUP	 [ReleaseCapture return 0]
-		WM_ERASEBKGND	 [return 1]					;-- drawing in WM_PAINT to avoid flicker
-		WM_SIZE  [
-			unless zero? GetWindowLong hWnd wc-offset + 4 [
-				update-base hWnd null null get-face-values hWnd
-			]
-		]
-		WM_PAINT [
+		;WM_MOUSEACTIVATE [
+		;	flags: GetWindowLong hWnd GWL_EXSTYLE
+		;	if flags and WS_EX_LAYERED > 0 [
+		;		return 3							;-- do not make it activated when click it
+		;	]
+		;]
+		;WM_LBUTTONDOWN	 [SetCapture hWnd return 0]
+		;WM_LBUTTONUP	 [ReleaseCapture return 0]
+		;WM_ERASEBKGND	 [return 1]					;-- drawing in WM_PAINT to avoid flicker
+		;WM_SIZE  [
+		;	either (get-face-flags hWnd) and FACET_FLAGS_D2D = 0 [
+		;		unless zero? GetWindowLong hWnd wc-offset + 4 [
+		;			update-base hWnd null null get-face-values hWnd
+		;		]
+		;	][
+		;		this: as this! GetWindowLong hWnd wc-offset - 24
+		;		rt: as ID2D1HwndRenderTarget this/vtbl
+		;		w: WIN32_LOWORD(lParam)
+		;		flags: WIN32_HIWORD(lParam)
+		;		rt/Resize this as tagSIZE :w
+		;		InvalidateRect hWnd null 1
+		;	]
+		;]
+		WM_PAINT
+		WM_DISPLAYCHANGE [
+			?? msg
 			draw: (as red-block! get-face-values hWnd) + FACE_OBJ_DRAW
-			either zero? GetWindowLong hWnd wc-offset - 4 [
+			;either zero? GetWindowLong hWnd wc-offset - 4 [
 				do-draw hWnd null draw no yes yes yes
-			][
-				bitblt-memory-dc hWnd no
-			]
+			;][
+			;	bitblt-memory-dc hWnd no
+			;]
 			return 0
 		]
 		default [0]

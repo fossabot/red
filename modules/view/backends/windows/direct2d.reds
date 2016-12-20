@@ -29,6 +29,15 @@ D3DCOLORVALUE: alias struct! [
 	a			[float32!]
 ]
 
+D2D_MATRIX_3X2_F: alias struct! [
+	_11			[float32!]
+	_12			[float32!]
+	_21			[float32!]
+	_22			[float32!]
+	_31			[float32!]
+	_32			[float32!]
+]
+
 D2D1_ELLIPSE: alias struct! [
 	x			[float32!]
 	y			[float32!]
@@ -144,6 +153,16 @@ DrawTextLayout*: alias function! [
 	options		[integer!]
 ]
 
+SetTransform*: alias function! [
+	this		[this!]
+	transform	[D2D_MATRIX_3X2_F]
+]
+
+Resize*: alias function! [
+	this		[this!]
+	pixelSize	[tagSIZE]
+	return:		[integer!]
+]
 
 ID2D1SolidColorBrush: alias struct! [
 	QueryInterface		[QueryInterface!]
@@ -151,7 +170,7 @@ ID2D1SolidColorBrush: alias struct! [
 	Release				[Release!]
 	GetFactory			[integer!]
 	SetOpacity			[integer!]
-	SetTransform		[integer!]
+	SetTransform		[SetTransform*]
 	GetOpacity			[integer!]
 	GetTransform		[integer!]
 	SetColor			[function! [this [this!] color [D3DCOLORVALUE]]]
@@ -164,7 +183,7 @@ ID2D1RadialGradientBrush: alias struct! [
 	Release						[Release!]
 	GetFactory					[integer!]
 	SetOpacity					[integer!]
-	SetTransform				[integer!]
+	SetTransform				[SetTransform*]
 	GetOpacity					[integer!]
 	GetTransform				[integer!]
 	SetCenter					[integer!]
@@ -240,7 +259,7 @@ ID2D1HwndRenderTarget: alias struct! [
 	DrawText						[integer!]
 	DrawTextLayout					[DrawTextLayout*]
 	DrawGlyphRun					[integer!]
-	SetTransform					[integer!]
+	SetTransform					[SetTransform*]
 	GetTransform					[integer!]
 	SetAntialiasMode				[integer!]
 	GetAntialiasMode				[integer!]
@@ -253,9 +272,9 @@ ID2D1HwndRenderTarget: alias struct! [
 	PushLayer						[integer!]
 	PopLayer						[integer!]
 	Flush							[integer!]
+	SaveDrawingState				[integer!]
 	RestoreDrawingState				[integer!]
 	PushAxisAlignedClip				[integer!]
-	SaveDrawingState				[integer!]
 	PopAxisAlignedClip				[integer!]
 	Clear							[function! [this [this!] color [D3DCOLORVALUE]]]
 	BeginDraw						[function! [this [this!]]]
@@ -267,8 +286,8 @@ ID2D1HwndRenderTarget: alias struct! [
 	GetPixelSize					[integer!]
 	GetMaximumBitmapSize			[integer!]
 	IsSupported						[integer!]
-	CheckWindowState				[integer!]
-	Resize							[integer!]
+	CheckWindowState				[function! [this [this!] return: [integer!]]]
+	Resize							[Resize*]
 	GetHwnd							[integer!]
 ]
 
@@ -303,7 +322,7 @@ ID2D1DCRenderTarget: alias struct! [
 	DrawText						[integer!]
 	DrawTextLayout					[DrawTextLayout*]
 	DrawGlyphRun					[integer!]
-	SetTransform					[integer!]
+	SetTransform					[SetTransform*]
 	GetTransform					[integer!]
 	SetAntialiasMode				[integer!]
 	GetAntialiasMode				[integer!]
@@ -452,7 +471,7 @@ IDWriteFontFace: alias struct! [
 D2D1CreateFactory!: alias function! [
 	type		[integer!]
 	riid		[int-ptr!]
-	options		[D2D1_FACTORY_OPTIONS]		;-- opt
+	options		[int-ptr!]		;-- opt
 	factory		[int-ptr!]
 	return:		[integer!]
 ]
@@ -471,6 +490,7 @@ DX-init: func [
 		hr					[integer!]
 		factory 			[integer!]
 		dll					[handle!]
+		options				[integer!]
 		D2D1CreateFactory	[D2D1CreateFactory!]
 		DWriteCreateFactory [DWriteCreateFactory!]
 ][
@@ -482,7 +502,8 @@ DX-init: func [
 	DWriteCreateFactory: as DWriteCreateFactory! GetProcAddress dll "DWriteCreateFactory"
 
 	factory: 0
-	hr: D2D1CreateFactory 0 IID_ID2D1Factory null :factory		;-- D2D1_FACTORY_TYPE_SINGLE_THREADED: 0
+	options: 0													;-- debugLevel
+	hr: D2D1CreateFactory 0 IID_ID2D1Factory :options :factory	;-- D2D1_FACTORY_TYPE_SINGLE_THREADED: 0
 	assert zero? hr
 	d2d-factory: as this! factory
 	hr: DWriteCreateFactory 0 IID_IDWriteFactory :factory		;-- DWRITE_FACTORY_TYPE_SHARED: 0
@@ -509,33 +530,64 @@ to-dx-color: func [
 	c
 ]
 
+;clear-background-d2d: func [
+;	hwnd	[handle!]
+;	/local
+;		this	[this!]
+;		rt		[ID2D1HwndRenderTarget]
+;][
+;	this: create-hwnd-render-target hWnd
+;	SetWindowLong hWnd wc-offset - 24 as-integer this
+
+;	rt: as ID2D1HwndRenderTarget this/vtbl
+;	rt/BeginDraw this
+;	rt/Clear this to-dx-color 0 null
+;probe "clear-background-d2d"
+;	probe rt/EndDraw this null null
+;]
+
 create-hwnd-render-target: func [
 	hwnd	[handle!]
 	return: [this!]
 	/local
-		props	[D2D1_RENDER_TARGET_PROPERTIES]
-		hprops	[D2D1_HWND_RENDER_TARGET_PROPERTIES]
-		rc		[RECT_STRUCT]
-		factory [ID2D1Factory]
-		rt		[ID2D1HwndRenderTarget]
-		target	[integer!]
-		hr		[integer!]
+		type		[integer!]
+		format		[integer!]
+		alphaMode	[integer!]
+		dpiX		[integer!]
+		dpiY		[integer!]
+		usage		[integer!]
+		minLevel	[integer!]
+		props		[D2D1_RENDER_TARGET_PROPERTIES]
+		options		[integer!]
+		height		[integer!]
+		width		[integer!]
+		wnd			[integer!]
+		hprops		[D2D1_HWND_RENDER_TARGET_PROPERTIES]
+		bottom		[integer!]
+		right		[integer!]
+		top			[integer!]
+		left		[integer!]
+		factory		[ID2D1Factory]
+		rt			[ID2D1HwndRenderTarget]
+		target		[integer!]
+		hr			[integer!]
 ][
-	rc: declare RECT_STRUCT
-	GetClientRect hwnd rc
-	hprops: declare D2D1_HWND_RENDER_TARGET_PROPERTIES
-	hprops/hwnd: hwnd
-	hprops/pixelSize.width: rc/right - rc/left
-	hprops/pixelSize.height: rc/bottom - rc/top
-	hprops/presentOptions: 1						;-- D2D1_PRESENT_OPTIONS_RETAIN_CONTENTS
+	left: 0 top: 0 right: 0 bottom: 0
+	GetClientRect hwnd as RECT_STRUCT :left
+	wnd: as-integer hwnd
+	width: right - left
+	height: bottom - top
+	options: 1						;-- D2D1_PRESENT_OPTIONS_RETAIN_CONTENTS: 1
+	hprops: as D2D1_HWND_RENDER_TARGET_PROPERTIES :wnd
 
-	props: as D2D1_RENDER_TARGET_PROPERTIES allocate size? D2D1_RENDER_TARGET_PROPERTIES
+	minLevel: 0
+	props: as D2D1_RENDER_TARGET_PROPERTIES :minLevel
 	zero-memory as byte-ptr! props size? D2D1_RENDER_TARGET_PROPERTIES
+	;props/minLevel: 40960			;-- D2D1_FEATURE_LEVEL_10
 
 	target: 0
 	factory: as ID2D1Factory d2d-factory/vtbl
 	hr: factory/CreateHwndRenderTarget d2d-factory props hprops :target
-	free as byte-ptr! props
 	if hr <> 0 [return null]
 	as this! target
 ]

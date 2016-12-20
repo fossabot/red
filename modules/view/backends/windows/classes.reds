@@ -147,37 +147,42 @@ FaceWndProc: func [
 register-classes: func [
 	hInstance [handle!]
 	/local
-		wcex  [WNDCLASSEX]
+		wcex  [WNDCLASS]
+		cur	  [handle!]
 ][
-	wcex: declare WNDCLASSEX
+	wcex: declare WNDCLASS
+	zero-memory as byte-ptr! wcex size? WNDCLASS
+	cur: LoadCursor null IDC_ARROW
 
-	wcex/cbSize: 		size? WNDCLASSEX
-	wcex/style:			CS_HREDRAW or CS_VREDRAW or CS_DBLCLKS
+	;wcex/cbSize: 		size? WNDCLASSEX
+	wcex/style:			CS_HREDRAW or CS_VREDRAW
 	wcex/lpfnWndProc:	:WndProc
 	wcex/cbClsExtra:	0
 	wcex/cbWndExtra:	wc-extra						;-- reserve extra memory for face! slot
 	wcex/hInstance:		hInstance
-	wcex/hIcon:			LoadIcon hInstance as c-string! 1
-	wcex/hCursor:		LoadCursor null IDC_ARROW
+	wcex/hIcon:			LoadIcon null as c-string! IDC_ARROW
+	wcex/hCursor:		cur
 	wcex/hbrBackground:	COLOR_3DFACE + 1
 	wcex/lpszMenuName:	null
 	wcex/lpszClassName: #u16 "RedWindow"
-	wcex/hIconSm:		0
+	;wcex/hIconSm:		0
 
-	RegisterClassEx wcex
+	RegisterClass wcex
 
-	wcex/style:			CS_HREDRAW or CS_VREDRAW or CS_DBLCLKS
+	zero-memory as byte-ptr! wcex size? WNDCLASS
+	wcex/style:			CS_HREDRAW or CS_VREDRAW
 	wcex/lpfnWndProc:	:BaseWndProc
 	wcex/cbClsExtra:	0
 	wcex/cbWndExtra:	wc-extra						;-- reserve extra memory for face! slot
 	wcex/hInstance:		hInstance
-	wcex/hIcon:			null
-	wcex/hCursor:		LoadCursor null IDC_ARROW
+	wcex/hIcon:			LoadIcon null as c-string! IDC_ARROW
+	wcex/hCursor:		cur
 	wcex/hbrBackground:	COLOR_3DFACE + 1
 	wcex/lpszMenuName:	null
 	wcex/lpszClassName: #u16 "RedBase"
 
-	RegisterClassEx wcex
+	RegisterClass wcex
+	zero-memory as byte-ptr! wcex size? WNDCLASS
 
 	wcex/style:			CS_HREDRAW or CS_VREDRAW or CS_DBLCLKS
 	wcex/lpfnWndProc:	:BaseInternalWndProc
@@ -185,12 +190,12 @@ register-classes: func [
 	wcex/cbWndExtra:	wc-extra						;-- reserve extra memory for face! slot
 	wcex/hInstance:		hInstance
 	wcex/hIcon:			null
-	wcex/hCursor:		LoadCursor null IDC_ARROW
+	wcex/hCursor:		cur
 	wcex/hbrBackground:	COLOR_3DFACE + 1
 	wcex/lpszMenuName:	null
 	wcex/lpszClassName: #u16 "RedBaseInternal"
 
-	RegisterClassEx wcex
+	RegisterClass wcex
 
 	wcex/style:			CS_HREDRAW or CS_VREDRAW or CS_DBLCLKS
 	wcex/lpfnWndProc:	:CameraWndProc
@@ -199,7 +204,7 @@ register-classes: func [
 	wcex/hbrBackground:	COLOR_BACKGROUND + 1
 	wcex/lpszClassName: #u16 "RedCamera"
 
-	RegisterClassEx wcex
+	RegisterClass wcex
 
 	;-- superclass existing classes to add 16 extra bytes
 	make-super-class #u16 "RedButton"	#u16 "BUTTON"			 0 yes

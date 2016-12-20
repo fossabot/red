@@ -339,21 +339,21 @@ platform: context [
 	;-------------------------------------------
 	;-- Do platform-specific initialization tasks
 	;-------------------------------------------
-	init: func [/local h [int-ptr!]] [
-		init-gdiplus
-		#either libRed? = no [
-			CoInitializeEx 0 COINIT_APARTMENTTHREADED
-		][
-			#if export-ABI <> 'stdcall [
-				CoInitializeEx 0 COINIT_APARTMENTTHREADED
-			]
-		]
+	init: func [/local h [int-ptr!] ph [integer!]] [
+		;init-gdiplus
+		;#either libRed? = no [
+		;	CoInitialize 0
+		;][
+		;	#if export-ABI <> 'stdcall [
+		;		CoInitialize 0
+		;	]
+		;]
 		crypto/init-provider
 		#if sub-system = 'console [init-dos-console]
 		#if unicode? = yes [
 			h: __iob_func
-			_setmode _fileno h + 1 _O_U16TEXT				;@@ throw an error on failure
-			_setmode _fileno h + 2 _O_U16TEXT				;@@ throw an error on failure
+			_setmode _fileno h + 8 _O_U16TEXT				;@@ stdout, throw an error on failure
+			_setmode _fileno h + 16 _O_U16TEXT				;@@ stderr, throw an error on failure
 		]
 	]
 ]

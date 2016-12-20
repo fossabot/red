@@ -260,6 +260,7 @@ Red/System [
 #define WM_WINDOWPOSCHANGED 0047h
 #define WM_NOTIFY			004Eh
 #define WM_CONTEXTMENU		007Bh
+#define WM_DISPLAYCHANGE	007Eh
 #define WM_KEYDOWN			0100h
 #define WM_KEYUP			0101h
 #define WM_CHAR				0102h
@@ -707,6 +708,19 @@ WNDCLASSEX: alias struct! [
 	lpszMenuName  [c-string!]
 	lpszClassName [c-string!]
 	hIconSm	  	  [integer!]
+]
+
+WNDCLASS: alias struct! [
+	style		  [integer!]
+	lpfnWndProc	  [wndproc-cb!]
+	cbClsExtra    [integer!]
+	cbWndExtra    [integer!]
+	hInstance	  [handle!]
+	hIcon	  	  [handle!]
+	hCursor		  [handle!]
+	hbrBackground [integer!]
+	lpszMenuName  [c-string!]
+	lpszClassName [c-string!]
 ]
 
 SCROLLINFO: alias struct! [
@@ -1161,6 +1175,10 @@ XFORM!: alias struct! [
 			dwFlags		[integer!]
 			return:		[integer!]
 		]
+		RegisterClass: "RegisterClassW" [
+			lpwc		[WNDCLASS]
+			return: 	[integer!]
+		]
 		RegisterClassEx: "RegisterClassExW" [
 			lpwcx		[WNDCLASSEX]
 			return: 	[integer!]
@@ -1223,6 +1241,11 @@ XFORM!: alias struct! [
 			lpRect		[RECT_STRUCT]
 			bErase		[integer!]
 			return:		[integer!]
+		]
+		ValidateRect: "ValidateRect" [
+			hWnd		[handle!]
+			lpRect		[RECT_STRUCT]
+			return:		[logic!]
 		]
 		GetParent: "GetParent" [
 			hWnd 		[handle!]
