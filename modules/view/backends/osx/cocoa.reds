@@ -168,6 +168,7 @@ Red/System [
 #define RedFieldEditorKey		4000FFFBh
 #define RedAllOverFlagKey		4000FFFCh
 #define RedAttachedWidgetKey	4000FFFDh
+#define RedInputContextKey		4000FFFEh
 
 #define handle! [pointer! [integer!]]
 
@@ -292,6 +293,11 @@ tagSIZE: alias struct! [
 			cls			[integer!]
 			return:		[integer!]
 		]
+		class_addProtocol: "class_addProtocol" [
+			cls			[integer!]
+			protocol	[integer!]
+			return:		[logic!]
+		]
 		object_getClass: "object_getClass" [
 			id			[integer!]
 			return:		[integer!]
@@ -306,6 +312,10 @@ tagSIZE: alias struct! [
 			id			[integer!]
 			name		[c-string!]
 			out			[int-ptr!]
+			return:		[integer!]
+		]
+		objc_getProtocol: "objc_getProtocol" [
+			name		[c-string!]
 			return:		[integer!]
 		]
 		objc_msgSend: "objc_msgSend" [[variadic] return: [integer!]]
@@ -396,6 +406,8 @@ tagSIZE: alias struct! [
 		NSBackgroundColorAttributeName: "NSBackgroundColorAttributeName" [integer!]
 		NSUnderlineStyleAttributeName: "NSUnderlineStyleAttributeName" [integer!]	
 		NSStrikethroughStyleAttributeName: "NSStrikethroughStyleAttributeName" [integer!]
+		NSMarkedClauseSegmentAttributeName: "NSMarkedClauseSegmentAttributeName" [integer!]
+		NSGlyphInfoAttributeName: "NSGlyphInfoAttributeName" [integer!]
 	]
 	"/System/Library/Frameworks/CoreServices.framework/CoreServices" cdecl [
 		Gestalt: "Gestalt" [

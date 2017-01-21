@@ -192,8 +192,8 @@ red-console-ctx: context [
 
 	load-cfg: func [/local cfg-dir][
 		system/view/auto-sync?: no
-		;cfg-dir: append to-red-file get-env "APPDATA" %/Red-Console/
-		cfg-dir: append to-red-file get-env "HOME" %/.Red-Console/
+		cfg-dir: append to-red-file get-env "APPDATA" %/Red-Console/
+		;cfg-dir: append to-red-file get-env "HOME" %/.Red-Console/
 		unless exists? cfg-dir [make-dir cfg-dir]
 		cfg-path: append cfg-dir %console-cfg.red
 		

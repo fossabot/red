@@ -1402,7 +1402,7 @@ OS-make-view: func [
 			sym = base
 		][
 			if TYPE_OF(menu) = TYPE_BLOCK [set-context-menu obj menu]
-			objc_msgSend [obj sel_getUid "setWantsLayer:" yes]
+			;objc_msgSend [obj sel_getUid "setWantsLayer:" yes]
 		]
 		sym = tab-panel [
 			set-tabs obj values
