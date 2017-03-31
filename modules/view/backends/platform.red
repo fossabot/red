@@ -38,7 +38,6 @@ system/view/platform: context [
 				FACE_OBJ_ACTORS
 				FACE_OBJ_EXTRA
 				FACE_OBJ_DRAW
-				FACE_OBJ_CURSOR
 			]
 			
 			#enum facet-flag! [
@@ -65,7 +64,6 @@ system/view/platform: context [
 				FACET_FLAG_ACTOR:		00100000h
 				FACET_FLAG_EXTRA:		00200000h
 				FACET_FLAG_DRAW:		00400000h
-				FACET_FLAG_CURSOR:		00800000h
 			]
 			
 			#enum flags-flag! [
@@ -186,6 +184,7 @@ system/view/platform: context [
 				EVT_FLAG_DBL_CLICK:		10000000h
 				EVT_FLAG_CTRL_DOWN:		20000000h
 				EVT_FLAG_SHIFT_DOWN:	40000000h
+				EVT_FLAG_MENU_DOWN:		80000000h		;-- ALT key
 				;EVT_FLAG_KEY_SPECIAL:	80000000h		;@@ deprecated
 			]
 
@@ -286,18 +285,7 @@ system/view/platform: context [
 			editable:		symbol/make "editable"
 
 			Direct2D:		symbol/make "Direct2D"
-
-			_arrow:			symbol/make "arrow"
-			_cross:			symbol/make "cross"
-			_hand:			symbol/make "hand"
-			_help:			symbol/make "help"
-			_I-beam:		symbol/make "I-beam"
-			_no:			symbol/make "no"
-			_wait:			symbol/make "wait"
-			_resize-ns:		symbol/make "resize-ns"
-			_resize-we:		symbol/make "resize-we"
-			_resize-nesw:	symbol/make "resize-nesw"
-			_resize-nwse:	symbol/make "resize-nwse"
+			
 
 			on-over:		symbol/make "on-over"
 			_actors:		word/load "actors"
@@ -306,6 +294,7 @@ system/view/platform: context [
 			_data:			word/load "data"
 			_control:		word/load "control"
 			_shift:			word/load "shift"
+			_alt:			word/load "alt"
 			_away:			word/load "away"
 			_down:			word/load "down"
 			_up:			word/load "up"
@@ -375,6 +364,8 @@ system/view/platform: context [
 			_right-control:	word/load "right-control"
 			_left-alt:		word/load "left-alt"
 			_right-alt:		word/load "right-alt"
+			_left-menu:		word/load "left-menu"
+			_right-menu:	word/load "right-menu"
 			_left-command:	word/load "left-command"
 			_right-command:	word/load "right-command"
 			_caps-lock:		word/load "caps-lock"
@@ -519,6 +510,8 @@ system/view/platform: context [
 			]
 		]
 	]
+	
+	make-null-handle: routine [][handle/box 0]
 
 	get-screen-size: routine [
 		id		[integer!]
@@ -598,21 +591,21 @@ system/view/platform: context [
 		SET_RETURN(none-value)
 	]
 
-	refresh-window: routine [hwnd [integer!]][
-		gui/OS-refresh-window hwnd
+	refresh-window: routine [h [handle!]][
+		gui/OS-refresh-window h/value
 	]
 
 	redraw: routine [face [object!]][
 		gui/OS-redraw face
 	]
 
-	show-window: routine [id [integer!]][
-		gui/OS-show-window id
+	show-window: routine [id [handle!]][
+		gui/OS-show-window id/value
 		SET_RETURN(none-value)
 	]
 
-	make-view: routine [face [object!] parent [integer!] return: [integer!]][
-		gui/OS-make-view face parent
+	make-view: routine [face [object!] parent [handle!]][
+		handle/box gui/OS-make-view face parent/value
 	]
 
 	draw-image: routine [image [image!] cmds [block!]][
@@ -692,7 +685,7 @@ system/view/platform: context [
 			offset: 0x0
 			size:	get-screen-size 0
 			pane:	make block! 4
-			state:	reduce [0 0 none copy [1]]
+			state:	reduce [make-null-handle 0 none copy [1]]
 		]
 		
 		set fonts:

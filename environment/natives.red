@@ -332,13 +332,13 @@ bind: make native! [[
 
 in: make native! [[
 		object [any-object!]
-		word   [any-word! block! paren!]
+		word   [any-word!]
 	]
 	#get-definition NAT_IN
 ]
 
 parse: make native! [[
-		input [series!]
+		input [binary! any-block! any-string!]
 		rules [block!]
 		/case
 		;/strict
@@ -433,30 +433,30 @@ dehex: make native! [[
 
 negative?: make native! [[
 		"Returns TRUE if the number is negative"
-		number [number!]
+		number [number! time!]
 	]
 	#get-definition NAT_NEGATIVE?
 ]
 
 positive?: make native! [[
 		"Returns TRUE if the number is positive"
-		number [number!]
+		number [number! time!]
 	]
 	#get-definition NAT_POSITIVE?
 ]
 
 max: make native! [[
 		"Returns the greater of the two values"
-		value1 [number! series! char!]
-		value2 [number! series! char!]
+		value1 [number! series! char! time!]
+		value2 [number! series! char! time!]
 	]
 	#get-definition NAT_MAX
 ]
 
 min: make native! [[
 		"Returns the lesser of the two values"
-		value1 [number! series! char!]
-		value2 [number! series! char!]
+		value1 [number! series! char! time!]
+		value2 [number! series! char! time!]
 	]
 	#get-definition NAT_MIN
 ]
@@ -550,6 +550,14 @@ NaN?: make native! [[
 		return: [logic!]
 	]
 	#get-definition NAT_NAN?
+]
+
+zero?: make native! [[
+		"Returns TRUE if the value is zero"
+		value	[number! pair! time! char! tuple!]
+		return: [logic!]
+	]
+	#get-definition NAT_ZERO?
 ]
 
 log-2: make native! [[
@@ -834,4 +842,19 @@ as: make native! [[
 		spec	[block! paren! any-path! any-string!] "The series to coerce"
 	]
 	#get-definition NAT_AS
+]
+
+call: make native! [[
+		"Executes a shell command to run another process"
+		cmd			[string! file!]			"A shell command or an executable file"
+		/wait								"Runs command and waits for exit"
+		/show								"Force the display of system's shell window (Windows only)"
+		/console							"Runs command with I/O redirected to console (CLI console only at present)"
+		/shell								"Forces command to be run from shell"
+		/input	in	[string! file! binary!]	"Redirects in to stdin"
+		/output	out	[string! file! binary!]	"Redirects stdout to out"
+		/error	err	[string! file! binary!]	"Redirects stderr to err"
+		return:		[integer!]				"0 if success, -1 if error, or a process ID"
+	]
+	#get-definition NAT_CALL
 ]

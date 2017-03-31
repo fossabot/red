@@ -336,7 +336,7 @@ load-value: func [
 		blk	  [red-block!]
 		value [red-value!]
 ][
-	#call [system/lexer/transcode/one/only str none none]
+	#call [system/lexer/transcode/one/only str none no]
 
 	blk: as red-block! stack/arguments
 	assert TYPE_OF(blk) = TYPE_BLOCK
@@ -467,7 +467,7 @@ words: context [
 	
 	windows:		-1
 	syllable:		-1
-	macosx:			-1
+	macOS:			-1
 	linux:			-1
 	
 	any*:			-1
@@ -496,6 +496,7 @@ words: context [
 	only:			-1
 	collect:		-1
 	keep:			-1
+	pick:			-1
 	ahead:			-1
 	after:			-1
 	x:				-1
@@ -541,11 +542,14 @@ words: context [
 	
 	user:			-1
 	host:			-1
+	
+	system:			-1
+	system-global:	-1
 
 	_body:			as red-word! 0
 	_windows:		as red-word! 0
 	_syllable:		as red-word! 0
-	_macosx:		as red-word! 0
+	_macOS:			as red-word! 0
 	_linux:			as red-word! 0
 	
 	_push:			as red-word! 0
@@ -646,7 +650,7 @@ words: context [
 
 		windows:		symbol/make "Windows"
 		syllable:		symbol/make "Syllable"
-		macosx:			symbol/make "MacOSX"
+		macOS:			symbol/make "macOS"
 		linux:			symbol/make "Linux"
 		
 		repeat:			symbol/make "repeat"
@@ -680,6 +684,7 @@ words: context [
 		only:			symbol/make "only"
 		collect:		symbol/make "collect"
 		keep:			symbol/make "keep"
+		pick:			symbol/make "pick"
 		ahead:			symbol/make "ahead"
 		after:			symbol/make "after"
 
@@ -731,10 +736,13 @@ words: context [
 		
 		user:			symbol/make "user"
 		host:			symbol/make "host"
+		
+		system:			symbol/make "system"
+		system-global:	symbol/make "system-global"
 
 		_windows:		_context/add-global windows
 		_syllable:		_context/add-global syllable
-		_macosx:		_context/add-global macosx
+		_macOS:			_context/add-global macOS
 		_linux:			_context/add-global linux
 		
 		_to:			_context/add-global to
