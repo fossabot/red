@@ -73,6 +73,9 @@ screen-size-x:	0
 screen-size-y:	0
 default-font-name: as c-string! 0
 
+High-DPI?:		no
+scaling-factor:	0.0
+
 kb-state: 		allocate 256							;-- holds keyboard state for keys conversion
 
 clean-up: does [
@@ -616,8 +619,15 @@ init: func [
 		or (version-info/dwMinorVersion << 8)
 		and 0000FFFFh
 
+	;-- In the modern monitors DPI for X and Y directions is same
 	log-pixels-x: GetDeviceCaps hScreen 88				;-- LOGPIXELSX
 	log-pixels-y: GetDeviceCaps hScreen 90				;-- LOGPIXELSY
+
+	High-DPI?: no
+	if log-pixels-x > 96 [
+		High-DPI?: yes
+		scaling-factor: (as float! log-pixels-x) / 96.0
+	]
 
 	unless winxp? [DX-init]
 	set-defaults
@@ -1084,6 +1094,8 @@ OS-make-view: func [
 		alpha?	  [logic!]
 		para?	  [logic!]
 		pt		  [tagPOINT]
+		sz-x	  [integer!]
+		sz-y	  [integer!]
 ][
 	stack/mark-func words/_body
 
@@ -1110,7 +1122,13 @@ OS-make-view: func [
 	panel?:	  no
 	alpha?:   no
 	para?:	  TYPE_OF(para) = TYPE_OBJECT
-	
+
+	sz-x: size/x
+	sz-y: size/y
+	if High-DPI? [
+		size/x: as-integer scaling-factor * (as float! sz-x)
+		size/y: as-integer scaling-factor * (as float! sz-y)
+	]
 
 	if all [show?/value sym <> window][flags: flags or WS_VISIBLE]
 	if para? [flags: flags or get-para-flags sym para]
@@ -1337,6 +1355,10 @@ OS-make-view: func [
 
 	SetWindowLong handle wc-offset + 16 get-flags as red-block! values + FACE_OBJ_FLAGS
 	stack/unwind
+	if High-DPI? [
+		size/x: sz-x
+		size/y: sz-y
+	]
 	as-integer handle
 ]
 
@@ -1349,16 +1371,25 @@ change-size: func [
 		cy	[integer!]
 		max [integer!]
 		msg [integer!]
+		x	[integer!]
+		y	[integer!]
 ][
 	cx: 0
 	cy: 0
 	if type = window [window-border-info? hWnd null null :cx :cy]
 
+	x: size/x
+	y: size/y
+	if High-DPI? [
+		x: as-integer scaling-factor * (as float! x)
+		y: as-integer scaling-factor * (as float! y)
+	]
+
 	SetWindowPos 
 		hWnd
 		as handle! 0
 		0 0
-		size/x + cx size/y + cy
+		x + cx y + cy
 		SWP_NOMOVE or SWP_NOZORDER or SWP_NOACTIVATE
 
 	if all [
@@ -1371,7 +1402,7 @@ change-size: func [
 	]
 	case [
 		any [type = slider type = progress][
-			max: either size/x > size/y [size/x][size/y]
+			max: either x > y [x][y]
 			msg: either type = slider [TBM_SETRANGEMAX][max: max << 16 PBM_SETRANGE]
 			SendMessage hWnd msg 0 max					;-- do not force a redraw
 		]

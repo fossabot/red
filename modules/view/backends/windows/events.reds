@@ -806,12 +806,20 @@ update-pair-facet: func [
 	lParam [integer!]
 	/local
 		pair [red-pair!]
+		x	 [integer!]
+		y	 [integer!]
 ][
+	x: WIN32_LOWORD(lParam)
+	y: WIN32_HIWORD(lParam)
+	if High-DPI? [
+		x: as-integer (as float! x) / scaling-factor
+		y: as-integer (as float! y) / scaling-factor
+	]
 	current-msg/hWnd: hWnd
 	pair: as red-pair! get-facet current-msg type
 	pair/header: TYPE_PAIR								;-- forces pair! in case user changed it
-	pair/x: WIN32_LOWORD(lParam)
-	pair/y: WIN32_HIWORD(lParam)
+	pair/x: x
+	pair/y: y
 ]
 
 set-window-info: func [
