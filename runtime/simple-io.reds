@@ -1815,8 +1815,11 @@ simple-io: context [
 	
 			#define CURLOPT_URL				10002
 			#define CURLOPT_HTTPGET			80
+			#define CURLOPT_POST			47
+			#define CURLOPT_PUT				54
 			#define CURLOPT_POSTFIELDSIZE	60
 			#define CURLOPT_NOPROGRESS		43
+			#define CURLOPT_UPLOAD			46
 			#define CURLOPT_FOLLOWLOCATION	52
 			#define CURLOPT_POSTFIELDS		10015
 			#define CURLOPT_WRITEDATA		10001
@@ -1966,7 +1969,7 @@ simple-io: context [
 					curl	[integer!]
 					res		[integer!]
 					buf		[byte-ptr!]
-					action	[c-string!]
+					action	[integer!]
 					bin		[red-binary!]
 					value	[red-value!]
 					tail	[red-value!]
@@ -1977,9 +1980,9 @@ simple-io: context [
 					blk		[red-block!]
 			][
 				switch method [
-					HTTP_GET  [action: "GET"]
-					;HTTP_PUT  [action: "PUT"]
-					HTTP_POST [action: "POST"]
+					HTTP_GET  [action: CURLOPT_HTTPGET]
+					HTTP_PUT  [action: CURLOPT_PUT]
+					HTTP_POST [action: CURLOPT_POST]
 					default [--NOT_IMPLEMENTED--]
 				]
 
@@ -1995,7 +1998,8 @@ simple-io: context [
 				slist: 0
 				len: -1
 				bin: binary/make-at stack/push* 4096
-				
+
+				curl_easy_setopt curl action 1
 				curl_easy_setopt curl CURLOPT_URL as-integer unicode/to-utf8 as red-string! url :len
 				curl_easy_setopt curl CURLOPT_NOPROGRESS 1
 				curl_easy_setopt curl CURLOPT_FOLLOWLOCATION 1
@@ -2030,8 +2034,8 @@ simple-io: context [
 				]
 
 				case [
-					method = HTTP_GET [
-						curl_easy_setopt curl CURLOPT_HTTPGET 1
+					method = HTTP_PUT [
+						
 					]
 					method = HTTP_POST [
 						if data <> null [
