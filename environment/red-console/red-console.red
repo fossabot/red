@@ -22,15 +22,14 @@ ask: function [
 	line: make string! 8
 	line: insert line question
 
-	con: red-console-ctx/console/extra
-	con/add-line line
-	con/line: line
-	con/pos: 0
-	con/calc-top
-	con/ask?: yes
-	con/redraw con/target
+	terminal/add-line line
+	terminal/line: line
+	terminal/pos: 0
+	terminal/calc-top
+	terminal/ask?: yes
+	terminal/redraw red-console-ctx/console
 	do-events
-	con/ask?: no
+	terminal/ask?: no
 	line
 ]
 
@@ -138,8 +137,13 @@ red-console-ctx: context [
 	]
 
 	apply-cfg: does [
-		win/offset:	cfg/win-pos
-		win/size:	cfg/win-size
+		win/offset:	  cfg/win-pos
+		win/size:	  cfg/win-size
+		console/font: make font! [
+			name:  cfg/font-name
+			size:  cfg/font-size
+			color: cfg/font-color
+		]
 		console/apply-cfg cfg
 	]
 
@@ -182,18 +186,21 @@ red-console-ctx: context [
 				if event/type = 'menu [clear head system/view/screens/1/pane]
 			]
 			on-resizing: func [face [object!] event [event!]][
-				;console/size: event/offset
-				console/resize event/offset
+				probe "on-resizing"
+				console/size: event/offset
+				terminal/resize event/offset
 				unless system/view/auto-sync? [show face]
 			]
 		]
-		console/extra/caret: caret
-		console/extra/tips: tips
 	]
 
-	load-cfg: func [/local cfg-dir][
+	load-cfg: func [/local cfg-dir ][
 		system/view/auto-sync?: no
-		cfg-dir: append to-red-file get-env "APPDATA" %/Red-Console/
+		#either config/OS = 'Windows [
+			cfg-dir: append to-red-file get-env "APPDATA" %/Red-Console/
+		][
+			cfg-dir: append to-red-file get-env "HOME" %/.Red-Console/
+		]
 		unless exists? cfg-dir [make-dir cfg-dir]
 		cfg-path: append cfg-dir %console-cfg.red
 		
@@ -223,8 +230,11 @@ red-console-ctx: context [
 		setup-faces
 		win/visible?: no
 
+probe 1
 		view/flags/no-wait win [resize]		;-- create window instance
+probe 2
 		console/init
+probe 3
 		load-cfg
 		win/visible?: yes
 

@@ -124,7 +124,7 @@ terminal!: object [
 	update-theme: func [][
 		background: first select theme 'background
 		select-bg:  reduce ['backdrop first select theme 'selected]
-		target/color: background
+		red-console-ctx/console/color: background
 	]
 
 	update-cfg: func [font cfg][
@@ -135,7 +135,7 @@ terminal!: object [
 		box/layout
 		box/tabs: tab-size * box/width
 		line-h: box/line-height 1
-		caret/size/y: line-h
+		red-console-ctx/caret/size/y: line-h
 	]
 
 	resize: func [new-size [pair!] /local y][
@@ -170,6 +170,7 @@ terminal!: object [
 
 	update-caret: func [/local len n s h lh offset][
 		unless line [exit]
+		?? caret
 		n: top
 		h: 0
 		len: length? skip lines top
@@ -180,7 +181,7 @@ terminal!: object [
 		offset: box/offset? pos + index? line
 		offset/y: offset/y + h + scroll-y
 		if ask? [
-			either offset/y < target/size/y [
+			either offset/y < red-console-ctx/console/size/y [
 				caret/offset: offset
 				unless caret/visible? [caret/visible?: yes]
 			][
@@ -407,7 +408,7 @@ terminal!: object [
 				pos: pos + 1
 			]
 		]
-		target/rate: 6
+		do [target/rate: 6]
 		if caret/rate [caret/rate: none caret/color: 0.0.0.1]
 		calc-top/edit
 		redraw target
@@ -452,7 +453,7 @@ terminal!: object [
 		unless line [exit]
 		cmds: [text 0x0 text-box]
 		cmds/3: box
-		end: target/size/y
+		end: red-console-ctx/console/size/y
 		y: scroll-y
 		n: top
 		num: line-cnt
@@ -483,6 +484,8 @@ terminal!: object [
 	]
 ]
 
+terminal: make terminal! []
+
 console!: make face! [
 	type: 'base color: 0.0.128 offset: 0x0 size: 400x400 cursor: 'I-beam
 	flags: [Direct2D editable scrollable all-over]
@@ -493,33 +496,33 @@ console!: make face! [
 	]
 	actors: object [
 		on-time: func [face [object!] event [event!]][
-			extra/caret/rate: 2
+			red-console-ctx/caret/rate: 2
 			face/rate: none
 		]
 		on-draw: func [face [object!] event [event!]][
 			probe "on-draw"
-			extra/paint
+			terminal/paint
 		]
 		on-scroll: func [face [object!] event [event!]][
-			extra/scroll event
+			terminal/scroll event
 		]
 		on-wheel: func [face [object!] event [event!]][
-			extra/scroll event
+			terminal/scroll event
 		]
 		on-key: func [face [object!] event [event!]][
-			extra/press-key event
+			terminal/press-key event
 		]
 		on-ime: func [face [object!] event [event!]][
-			extra/process-ime-input event
+			terminal/process-ime-input event
 		]
 		on-down: func [face [object!] event [event!]][
-			extra/mouse-down event
+			terminal/mouse-down event
 		]
 		on-up: func [face [object!] event [event!]][
-			extra/mouse-up event
+			terminal/mouse-up event
 		]
 		on-over: func [face [object!] event [event!]][
-			extra/mouse-move event
+			terminal/mouse-move event
 		]
 		on-menu: func [face [object!] event [event!]][
 			switch event/picked [
@@ -530,13 +533,7 @@ console!: make face! [
 		]
 	]
 
-	resize: func [new-size][
-		self/size: new-size
-		extra/resize new-size
-	]
-
-	init: func [/local terminal box scroller][
-		terminal: extra
+	init: func [/local box scroller][
 		terminal/target: self
 		box: terminal/box
 		box/fixed?: yes
@@ -552,14 +549,13 @@ console!: make face! [
 	]
 
 	apply-cfg: func [cfg][
-		self/font:	make font! [
-			name:  cfg/font-name
-			size:  cfg/font-size
-			color: cfg/font-color
-		]
-		extra/update-cfg self/font cfg
-		extra/update-theme
+		;self/font:	make font! [
+		;	name:  cfg/font-name
+		;	size:  cfg/font-size
+		;	color: cfg/font-color
+		;]
+		probe "apply-cfg"
+		terminal/update-cfg self/font cfg
+		terminal/update-theme
 	]
-
-	extra: make terminal! []
 ]
