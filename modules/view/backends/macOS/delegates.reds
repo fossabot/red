@@ -1170,12 +1170,44 @@ hit-test: func [
 	[cdecl]
 	self	[integer!]
 	cmd		[integer!]
-	x		[float32!]
-	y		[float32!]
+	x		[integer!]
+	y		[integer!]
 	return: [integer!]
+	/local
+		img		[red-image!]
+		sz		[red-pair!]
+		pt		[CGPoint! value]
+		super	[objc_super! value]
+		v		[integer!]
+		pixel	[integer!]
+		w		[integer!]
+		h		[integer!]
+		ratio	[float32!]
+		vals	[red-value!]
 ][
-	;probe "char-idx-point"
-	0
+	super/receiver: self
+	super/superclass: objc_msgSend [self sel_getUid "superclass"]
+	v: objc_msgSendSuper [super cmd x y]
+	if v = self [
+		vals: get-face-values self
+		img: (as red-image! vals) + FACE_OBJ_IMAGE
+		sz: (as red-pair! vals) + FACE_OBJ_SIZE
+		if TYPE_OF(img) = TYPE_IMAGE [
+			pt: objc_msgSend_pt [
+				self sel_getUid "convertPoint:fromView:" x y
+				objc_msgSend [self sel_getUid "superview"]
+			]
+			w: IMAGE_WIDTH(img/size)
+			h: IMAGE_HEIGHT(img/size)
+			ratio: (as float32! w) / (as float32! sz/x)
+			x: as-integer pt/x * ratio
+			ratio: (as float32! h) / (as float32! sz/y)
+			y: as-integer pt/y * ratio
+			pixel: OS-image/get-pixel img/node y * w + x
+			if pixel >>> 24 = 0 [v: 0]
+		]
+	]
+	v
 ]
 
 draw-rect: func [
@@ -1215,7 +1247,9 @@ draw-rect: func [
 		paint-background ctx clr/array1 x y width height
 	]
 	if TYPE_OF(img) = TYPE_IMAGE [
+		CGContextTranslateCTM ctx as float32! 0.5 as float32! 0.5
 		CG-draw-image ctx OS-image/to-cgimage img 0 0 size/x size/y
+		CGContextTranslateCTM ctx as float32! -0.5 as float32! -0.5
 	]
 	if (object_getClass self) = objc_getClass "RedBase" [
 		render-text ctx vals as NSSize! (as int-ptr! self) + 8

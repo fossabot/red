@@ -210,6 +210,7 @@ OS-draw-line-width: func [
 		width-v	[float32!]
 ][
 	width-v: get-float32 as red-integer! width
+	if width-v <= F32_0 [width-v: F32_1]
 	if dc/pen-width <> width-v [
 		dc/pen-width: width-v
 		CGContextSetLineWidth dc/raw width-v
