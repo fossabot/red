@@ -39,8 +39,8 @@ init-panel: func [
 			x: calc-rect/left - win-rect/left
 			y: calc-rect/top  - win-rect/top
 			either dpi-factor <> 100 [
-				pair/x: x * 100 / dpi-factor
-				pair/y: y * 100 / dpi-factor
+				pair/x: dpi-unscale x
+				pair/y: dpi-unscale y
 			][
 				pair/x: x - 3
 				pair/y: y - 1
@@ -50,8 +50,8 @@ init-panel: func [
 			x: calc-rect/right  - calc-rect/left
 			y: calc-rect/bottom - calc-rect/top
 			either dpi-factor <> 100 [
-				pair/x: x * 100 / dpi-factor
-				pair/y: y * 100 / dpi-factor
+				pair/x: dpi-unscale x
+				pair/y: dpi-unscale y
 			][
 				pair/x: x + 4
 				pair/y: y + 3

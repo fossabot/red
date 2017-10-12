@@ -69,6 +69,7 @@ ime-open?:		no
 ime-font:		as tagLOGFONT allocate 92
 
 dpi-factor:		100
+dpi-ratio:		as float32! 1.0
 log-pixels-x:	0
 log-pixels-y:	0
 screen-size-x:	0
@@ -81,8 +82,11 @@ kb-state: 		allocate 256							;-- holds keyboard state for keys conversion
 dpi-scale: func [
 	num		[integer!]
 	return: [integer!]
+	/local
+		f	[float32!]
 ][
-	num * dpi-factor / 100
+	f: dpi-ratio * (as float32! num) + as float32! 0.95
+	as-integer f
 ]
 
 dpi-unscale: func [
@@ -291,8 +295,8 @@ get-text-size: func [
 
 	SelectObject hScreen saved
 	if pair <> null [
-		pair/x: size/width * 100 / dpi-factor
-		pair/y: size/height * 100 / dpi-factor
+		pair/x: dpi-unscale size/width
+		pair/y: dpi-unscale size/height
 	]
 	size
 ]
@@ -675,6 +679,8 @@ get-dpi: func [
 		log-pixels-y: GetDeviceCaps hScreen 90			;-- LOGPIXELSY
 	]
 	dpi-factor: log-pixels-x * 100 / 96
+	dpi-ratio: (as float32! dpi-factor) / as float32! 100.0
+	?? dpi-ratio
 ]
 
 get-metrics: func [
@@ -1044,7 +1050,7 @@ get-screen-size: func [
 ][
 	screen-size-x: GetDeviceCaps hScreen HORZRES
 	screen-size-y: GetDeviceCaps hScreen VERTRES
-	pair/push screen-size-x * 100 / dpi-factor screen-size-y * 100 / dpi-factor
+	pair/push dpi-unscale screen-size-x dpi-unscale screen-size-y
 ]
 
 dwm-composition-enabled?: func [
@@ -1486,8 +1492,8 @@ OS-make-view: func [
 		]
 		sym = window [
 			init-window handle bits
-			offset/x: off-x - rc/left * 100 / dpi-factor
-			offset/y: off-y - rc/top * 100 / dpi-factor
+			offset/x: dpi-unscale off-x - rc/left
+			offset/y: dpi-unscale off-y - rc/top
 		]
 		true [0]
 	]
@@ -1923,7 +1929,8 @@ change-parent: func [
 		bool		[red-logic!]
 		type		[red-word!]
 		values		[red-value!]
-		pt			[tagPOINT]
+		offset		[red-pair!]
+		pt			[tagPOINT value]
 		x			[integer!]
 		y			[integer!]
 		sym			[integer!]
@@ -1957,11 +1964,14 @@ change-parent: func [
 			SetWindowLong hWnd wc-offset - 16 as-integer handle
 			x: GetWindowLong hWnd wc-offset - 4
 			y: GetWindowLong hWnd wc-offset - 8
-			pt: position-base hWnd handle as red-pair! values + FACE_OBJ_OFFSET
+			offset: as red-pair! values + FACE_OBJ_OFFSET
+			pt/x: dpi-scale offset/x
+			pt/y: dpi-scale offset/y
+			position-base hWnd handle :pt
 			SetWindowPos hWnd null pt/x pt/y 0 0 SWP_NOSIZE or SWP_NOZORDER or SWP_NOACTIVATE
 			pt/x: pt/x - x
 			pt/y: pt/y - y
-			update-layered-window hWnd null pt null -1
+			update-layered-window hWnd null :pt null -1
 			exit
 		][
 			SetParent hWnd handle

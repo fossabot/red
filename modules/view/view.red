@@ -463,14 +463,6 @@ scroller!: object [
 	parent:		none
 
 	on-change*: function [word old new][
-		if system/view/debug? [
-			print [
-				"-- scroller on-change event --" lf
-				tab "word :" word			 lf
-				tab "old  :" type? :old		 lf
-				tab "new  :" type? :new
-			]
-		]
 		if all [parent block? parent/state handle? parent/state/1][
 			system/view/platform/update-scroller self (index? in self word) - 1
 		]
@@ -1026,6 +1018,7 @@ insert-event-func [
 			any [
 				event/face = gui-console-ctx/console
 				event/face = gui-console-ctx/win
+				event/face = gui-console-ctx/caret
 			]
 		]
 	][

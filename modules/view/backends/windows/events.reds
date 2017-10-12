@@ -120,11 +120,11 @@ get-event-offset: func [
 				y: pt/y
 				pt: get-window-pos msg/hWnd
 				ClientToScreen msg/hWnd pt
-				offset/x: x - pt/x * 100 / dpi-factor
-				offset/y: y - pt/y * 100 / dpi-factor
+				offset/x: dpi-unscale x - pt/x
+				offset/y: dpi-unscale y - pt/y
 			][
-				offset/x: WIN32_LOWORD(value) * 100 / dpi-factor
-				offset/y: WIN32_HIWORD(value) * 100 / dpi-factor
+				offset/x: dpi-unscale WIN32_LOWORD(value)
+				offset/y: dpi-unscale WIN32_HIWORD(value)
 			]
 			as red-value! offset
 		]
@@ -911,8 +911,10 @@ WndProc: func [
 				winpos: as tagWINDOWPOS lParam
 				pt: screen-to-client hWnd winpos/x winpos/y
 				offset: (as red-pair! values) + FACE_OBJ_OFFSET
+probe ["1 " dpi-scale offset/x " " dpi-scale offset/y]
 				pt/x: winpos/x - pt/x - dpi-scale offset/x
 				pt/y: winpos/y - pt/y - dpi-scale offset/y
+probe [pt/x " " pt/y]
 				update-layered-window hWnd null pt winpos -1
 			]
 		]
@@ -941,11 +943,11 @@ WndProc: func [
 						FACE_OBJ_OFFSET
 					][FACE_OBJ_SIZE]
 					if miniz? [return 0]
-
+probe ["2 " WIN32_LOWORD(lParam) " " WIN32_HIWORD(lParam)]
 					offset: as red-pair! values + type
 					offset/header: TYPE_PAIR
-					offset/x: WIN32_LOWORD(lParam) * 100 / dpi-factor
-					offset/y: WIN32_HIWORD(lParam) * 100 / dpi-factor
+					offset/x: dpi-unscale WIN32_LOWORD(lParam)
+					offset/y: dpi-unscale WIN32_HIWORD(lParam)
 
 					modal-loop-type: either msg = WM_MOVE [EVT_MOVING][EVT_SIZING]
 					current-msg/hWnd: hWnd
