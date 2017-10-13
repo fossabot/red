@@ -900,5 +900,6 @@ append win/pane make face! [
 
 dump-face win
 view/flags win [resize]
+debug-print "view-test.................... done"
 system/view/debug?: no
 system/view/auto-sync?: yes

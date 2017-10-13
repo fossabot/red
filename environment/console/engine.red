@@ -33,7 +33,7 @@ system/console: context [
 	result:		"=="
 	history:	make block! 200
 	size:		0x0
-	running?:	no
+	running?:	yes
 	catch?:		no										;-- YES: force script to fallback into the console
 	count:		[0 0 0]									;-- multiline counters for [squared curly parens]
 	ws:			charset " ^/^M^-"

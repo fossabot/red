@@ -34,7 +34,7 @@ debug-print: routine [arg [any-type!] /local blk [red-block!]][
 #include %highlight.red
 #include %tips.red
 
-red-console-ctx: context [
+gui-console-ctx: context [
 	cfg-path:	none
 	cfg:		none
 	font:		make font! [name: "Consolas" size: 11 color: 0.0.0]
@@ -108,14 +108,14 @@ red-console-ctx: context [
 			]
 		]
 	]
-	tips:		make tips! [visible?: no]
+	;tips:		make tips! [visible?: no]
 
 	terminal:	#include %core.red
 
 	#include %settings.red
 
 	setup-faces: does [
-		append win/pane reduce [console tips caret]
+		append win/pane reduce [console caret]
 		win/menu: [
 			"File" [
 				"Open..."			open-file
@@ -188,19 +188,20 @@ ask: function [
 	question [string!]
 	return:  [string!]
 ][
-	unless red-console-ctx/console/state [
+debug-print "ask............................................................."
+	unless gui-console-ctx/console/state [
 		return "quit"
 	]
 	line: make string! 8
 	line: insert line question
 	
-	vt: red-console-ctx/terminal
+	vt: gui-console-ctx/terminal
 	vt/line: line
 	vt/pos: 0
 	vt/add-line line
 	vt/ask?: yes
 	vt/reset-top/force
-	system/view/platform/redraw red-console-ctx/console
+	system/view/platform/redraw gui-console-ctx/console
 	either vt/paste/resume [
 		do-events/no-wait
 	][
@@ -215,7 +216,7 @@ ask: function [
 		str		[red-string!]
 		lf?		[logic!]
 	][
-		#call [red-console-ctx/terminal/vprint str lf?]
+		#call [gui-console-ctx/terminal/vprint str lf?]
 	]
 
 	rs-print-gui: func [
@@ -239,7 +240,7 @@ ask: function [
 		red-print-gui str lf?
 	]
 
-	dyn-print/add as int-ptr! :red-print-gui as int-ptr! :rs-print-gui
+	dyn-print/add as int-ptr! :red-print-gui null ;as int-ptr! :rs-print-gui
 ]
 
-red-console-ctx/launch
+gui-console-ctx/launch
