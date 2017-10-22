@@ -168,8 +168,8 @@ object [
 		box/text: head last lines
 		box/layout
 		total: line-cnt
-		h: box/height
-		cnt: box/line-count
+		h: box/height?
+		cnt: box/line-count?
 		either any [new? n > length? nlines][			;-- add a new line
 			append heights h
 			append nlines cnt
@@ -226,8 +226,8 @@ object [
 		max-lines: cfg/buffer-lines
 		box/text: "X"
 		box/layout
-		box/tabs: tab-size * box/width
-		line-h: box/line-height 1
+		box/tabs: tab-size * box/width?
+		line-h: box/line-height? 1
 		caret/size/y: line-h
 		update-theme
 	]
@@ -820,8 +820,8 @@ object [
 			cmds/2/y: y
 			system/view/platform/draw-face console cmds
 
-			h: box/height
-			cnt: box/line-count
+			h: box/height?
+			cnt: box/line-count?
 			poke heights n h
 			line-cnt: line-cnt + cnt - pick nlines n
 			poke nlines n cnt

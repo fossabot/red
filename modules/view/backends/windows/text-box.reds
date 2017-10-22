@@ -276,7 +276,6 @@ OS-text-box-layout: func [
 		str		[red-string!]
 		size	[red-pair!]
 		int		[red-integer!]
-		fixed?	[red-logic!]
 		state	[red-block!]
 		styles	[red-block!]
 		vec		[red-vector!]
@@ -313,9 +312,8 @@ OS-text-box-layout: func [
 		int: int + 1
 		fmt: as this! int/value
 	][
-		fixed?: as red-logic! values + TBOX_OBJ_FIXED?
 		fmt: as this! create-text-format as red-object! values + TBOX_OBJ_FONT
-		if fixed?/value [set-line-spacing fmt]
+		set-line-spacing fmt
 		block/make-at state 2
 		none/make-in state							;-- 1: text layout
 		integer/make-in state as-integer fmt		;-- 2: text format

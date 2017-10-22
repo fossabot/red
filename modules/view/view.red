@@ -499,22 +499,13 @@ text-box!: object [
 	styles:		none					;-- style list (block!), [start-pos length style1 style2 ...]
 	state:		none					;-- OS handles
 	target:		none					;-- face!, image!, etc.
-	fixed?:		no						;-- fixed line height
-
-	;-- internal use only
-	width:		none
-	height:		none
-	line-count: none
 
 	;;
-	;; public query functions
+	;; Query information from text box
 	;;
-	text-size?: function [return: [pair!]][			;-- TBD: remove width and height, use this function instead
-		"Return the size of the text, maybe different than the text box size"
-		as-pair width height
-	]
-
-	line-count?: func [return: [integer!]][line-count]
+	width?:			none				;-- text width in pixel
+	height?:		none				;-- text height in pixel
+	line-count?:	none				;-- number of lines (> 1 if line wrapped)
 
 	offset?: function [
 		"Given a text position, returns the corresponding coordinate relative to the top-left of the layout box"
@@ -532,7 +523,7 @@ text-box!: object [
 		system/view/platform/text-box-metrics self/state pt 1
 	]
 
-	line-height: function [
+	line-height?: function [
 		"Given a text position, returns the corresponding line's height"
 		pos 	[integer!]
 		return: [integer!]
@@ -540,10 +531,17 @@ text-box!: object [
 		system/view/platform/text-box-metrics self/state pos 2
 	]
 
-	layout: func [][
-		system/view/platform/text-box-layout self
-		system/view/platform/text-box-metrics self/state self 3
+	on-change*: function [word old new][
+		if word <> 'state [
+			if all [block? state state/1 handle? state/2][
+				change state false
+			]
+		]
 	]
+	;layout: func [][
+	;	system/view/platform/text-box-layout self
+	;	system/view/platform/text-box-metrics self/state self 3
+	;]
 ]
 
 system/view: context [
