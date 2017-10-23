@@ -497,22 +497,18 @@ text-box!: object [
 	spacing:	none					;-- line spacing (integer!)
 	tabs:		none					;-- incremental tab size: the fixed distance between two adjacent tab stops (integer!)
 	styles:		none					;-- style list (block!), [start-pos length style1 style2 ...]
-	state:		none					;-- OS handles
 	target:		none					;-- face!, image!, etc.
+	state:		none					;-- OS handles (internal used only)
 
 	;;
 	;; Query information from text box
 	;;
-	width?:			none				;-- text width in pixel
-	height?:		none				;-- text height in pixel
-	line-count?:	none				;-- number of lines (> 1 if line wrapped)
-
 	offset?: function [
 		"Given a text position, returns the corresponding coordinate relative to the top-left of the layout box"
 		pos		[integer!]
 		return:	[pair!]
 	][
-		system/view/platform/text-box-metrics self/state pos 0
+		system/view/platform/text-box-metrics self pos 0
 	]
 
 	index?: function [
@@ -520,7 +516,7 @@ text-box!: object [
 		pt		[pair!]
 		return: [integer!]
 	][
-		system/view/platform/text-box-metrics self/state pt 1
+		system/view/platform/text-box-metrics self pt 1
 	]
 
 	line-height?: function [
@@ -528,20 +524,37 @@ text-box!: object [
 		pos 	[integer!]
 		return: [integer!]
 	][
-		system/view/platform/text-box-metrics self/state pos 2
+		system/view/platform/text-box-metrics self pos 2
+	]
+
+	width?: function [
+		"text width in pixel"
+		return: [integer!]
+	][
+		system/view/platform/text-box-metrics self 0 3
+	]
+
+	height?: function [
+		"text height in pixel"
+		return: [integer!]
+	][
+		system/view/platform/text-box-metrics self 1 3
+	]
+
+	line-count?: function [
+		"number of lines (> 1 if line wrapped)"
+		return: [integer!]
+	][
+		system/view/platform/text-box-metrics self 0 4
 	]
 
 	on-change*: function [word old new][
 		if word <> 'state [
-			if all [block? state state/1 handle? state/2][
-				change state false
+			if all [block? state not last state][
+				change back tail state true
 			]
 		]
 	]
-	;layout: func [][
-	;	system/view/platform/text-box-layout self
-	;	system/view/platform/text-box-metrics self/state self 3
-	;]
 ]
 
 system/view: context [
