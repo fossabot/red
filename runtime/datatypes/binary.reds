@@ -228,6 +228,37 @@ binary: context [
 		if null? bin/node [fire [TO_ERROR(script invalid-data) issue]]
 	]
 
+	from-bigint: func [
+		big		[red-bignum!]
+		bin		[red-binary!]
+		/local
+			s	[series!]
+			p	[byte-ptr!]
+			pb	[byte-ptr!]
+			sz	[integer!]
+	][
+		s: GET_BUFFER(big)
+		p: as byte-ptr! s/offset
+
+		either big/used = 0 [
+			sz: 1
+		][
+			sz: big/used * 4
+		]
+		p: p + sz
+
+		make-at as red-value! bin sz
+		s: GET_BUFFER(bin)
+		pb: as byte-ptr! s/offset
+		s/tail: as cell! (pb + sz)
+		
+		loop sz [
+			p: p - 1
+			pb/value: p/value
+			pb: pb + 1
+		]
+	]
+
 	equal?: func [
 		bin1	[red-binary!]
 		bin2	[red-binary!]
@@ -796,6 +827,7 @@ binary: context [
 			TYPE_TUPLE [
 				proto: load GET_TUPLE_ARRAY(spec) TUPLE_SIZE?(spec)
 			]
+			TYPE_BIGNUM [from-bigint as red-bignum! spec proto]
 			TYPE_ISSUE [from-issue as red-word! spec proto]
 			TYPE_ANY_LIST [
 				make-at as red-value! proto 16

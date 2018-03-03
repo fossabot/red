@@ -1777,16 +1777,27 @@ bignum: context [
 	]
 
 	;--- Actions ---
-	
+
 	make: func [
-		proto	 	[red-value!]
-		spec	 	[red-value!]
-		return:	 	[red-bignum!]
+		proto	[red-value!]
+		spec	[red-value!]
+		type	[integer!]
+		return:	[red-bignum!]
+	][
+		#if debug? = yes [if verbose > 0 [print-line "bignum/make"]]
+		as red-bignum! to proto spec type
+	]
+
+	to: func [
+		proto		[red-value!]
+		spec		[red-value!]
+		type		[integer!]								;-- target type
+		return:		[red-value!]
 		/local
-			int	 	[red-integer!]
-			bin	 	[red-binary!]
-			big	 	[red-bignum!]
-			s	 	[series!]
+			int		[red-integer!]
+			bin		[red-binary!]
+			big		[red-bignum!]
+			s		[series!]
 			sbin	[series!]
 			pbig	[byte-ptr!]
 			head	[byte-ptr!]
@@ -1794,7 +1805,7 @@ bignum: context [
 			len		[integer!]
 			size	[integer!]
 	][
-		#if debug? = yes [if verbose > 0 [print-line "bignum/make"]]
+		#if debug? = yes [if verbose > 0 [print-line "bignum/to"]]
 
 		switch TYPE_OF(spec) [
 			TYPE_INTEGER [
@@ -1832,7 +1843,7 @@ bignum: context [
 			default [--NOT_IMPLEMENTED--]
 		]
 
-		big
+		as red-value! big
 	]
 
 	form: func [
@@ -2109,7 +2120,7 @@ bignum: context [
 			:make
 			null			;random
 			null			;reflect
-			null			;to
+			:to
 			:form
 			:mold
 			null			;eval-path
