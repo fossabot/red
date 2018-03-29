@@ -43,7 +43,7 @@ Red [
 	
 	system/version: load system/version
 	
-	system/options/cache: either system/platform = 'Windows [
+	system/options/cache: either system/platform/OS = 'Windows [
 		append to-red-file get-env "ALLUSERSPROFILE" %/Red/
 	][
 		append any [attempt [to-red-file get-env "HOME"] %/tmp] %/.red/

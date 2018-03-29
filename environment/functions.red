@@ -525,7 +525,7 @@ to-red-file: func [
 	dst: make file! len
 	if zero? len [return dst]
 	i: 1
-	either system/platform = 'Windows [
+	#either config/OS = 'Windows [
 		until [
 			c: pick path i
 			i: i + 1

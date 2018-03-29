@@ -57,6 +57,18 @@ Red/System [
 		]
 		as red-value! map/make-at as red-value! blk blk len
 	]
+
+	__get-OS-info: func [
+		/local
+			obj  [red-object!]
+			ctx  [red-context!]
+			syms [red-value!]
+			vals [red-value!]
+	][
+		obj: object/make-at as red-object! stack/push* 8
+		ctx: GET_CTX(obj)
+		_context/add-with ctx _context/add-global symbol/make "OS" as red-value! words/_windows
+	]
 ][
 	get-cmdline-args: func [
 		return: [red-value!]
