@@ -193,22 +193,20 @@ object [
 		n
 	]
 
-	calc-top: func [/edit /new /local delta n][
+	calc-top: func [/new /local delta n][
 		n: calc-last-line new
 		if n < 0 [
 			delta: scroller/position + n
 			scroller/position: either delta < 1 [1][delta]
 		]
-		if n <> 0 [scroller/max-size: line-cnt - 1 + page-cnt]
+		if n <> 0 [scroller/max-size: line-cnt]
 		delta: screen-cnt + n - page-cnt
 		if screen-cnt < page-cnt [
 			screen-cnt: screen-cnt + n
 			if screen-cnt > page-cnt [screen-cnt: page-cnt]
 		]
 		n: line-cnt - page-cnt
-		if delta >= 0 [
-			either edit [reset-top][scroll-lines 0 - delta]
-		]
+		if delta >= 0 [reset-top]
 	]
 
 	reset-top: func [/force /local n][
@@ -219,7 +217,7 @@ object [
 		][
 			n: last nlines
 			top: length? lines
-			scroller/position: scroller/max-size - page-cnt - n + 2
+			scroller/position: scroller/max-size - n
 			scroll-lines page-cnt - n
 		]
 	]
@@ -260,7 +258,7 @@ object [
 		if scroller [
 			page-cnt: y / line-h
 			scroller/page-size: page-cnt
-			scroller/max-size: line-cnt - 1 + page-cnt
+			scroller/max-size: line-cnt
 			scroller/position: scroller/position
 		]
 	]
@@ -274,7 +272,7 @@ object [
 			page-up		[scroller/page-size]
 			page-down	[0 - scroller/page-size]
 			track		[scroller/position - event/picked]
-			wheel		[event/picked]
+			wheel		[event/picked * 3]
 		][0]
 		if n <> 0 [
 			scroll-lines n
@@ -414,7 +412,7 @@ object [
 	]
 
 	scroll-lines: func [delta /local n len cnt end offset][
-		end: scroller/max-size - page-cnt + 1
+		end: scroller/max-size
 		offset: scroller/position
 
 		if any [
@@ -465,9 +463,9 @@ object [
 		top: n
 	]
 
-	update-scroller: func [delta /reposition /local n end][
-		end: scroller/max-size - page-cnt + 1
-		if delta <> 0 [scroller/max-size: line-cnt - 1 + page-cnt]
+	update-scroller: func [delta /local n end][
+		end: scroller/max-size
+		if delta <> 0 [scroller/max-size: line-cnt]
 		if delta < 0 [
 			n: scroller/position
 			if n <> end [scroller/position: n - delta]
@@ -484,7 +482,7 @@ object [
 			ime-open?: yes
 		]
 		pos: ime-pos + length? text
-		calc-top/edit
+		calc-top
 		system/view/platform/redraw console
 	]
 
@@ -551,7 +549,7 @@ object [
 				insert history line
 				unless resume [system/view/platform/exit-event-loop]
 			]
-			calc-top/edit
+			calc-top
 			if empty? clipboard [
 				clear selects
 				clear redo-stack
@@ -793,7 +791,7 @@ object [
 		]
 		console/rate: 6
 		if caret/rate [caret/rate: none caret/color: caret-clr]
-		calc-top/edit
+		calc-top
 		system/view/platform/redraw console
 	]
 
